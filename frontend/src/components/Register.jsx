@@ -13,26 +13,30 @@ const Register = () => {
   const [avatar, setAvatar] = useState(null);
   const [visible, setVisible] = useState(false);
 
-  const handleFileInPutChange = (e) => {
-    const avatar = e.target.files[0];
-    setAvatar(avatar);
+  const handleFileInputChange = (e) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      // 2: DONE - Việc đọc tệp đã hoàn thành.
+      if (reader.readyState === 2) {
+        setAvatar(reader.result);
+      }
+    };
+    reader.readAsDataURL(e.target.files[0]);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     // const config = { headers: { "Content-Type": "multipart/form-data" } };
-    const newForm = new FormData();
-    newForm.append("file", avatar);
-    newForm.append("name", name);
-    newForm.append("password", password);
-    newForm.append("email", email);
 
-    axios.post(`${server}/user/register-user`, newForm).then(() => {
-      setName("");
-      setEmail("");
-      setPassword("");
-      setAvatar();
-    });
+    axios
+      .post(`${server}/user/register-user`, { name, email, password, avatar })
+      .then(() => {
+        setName("");
+        setEmail("");
+        setPassword("");
+        setAvatar();
+      });
   };
 
   return (
@@ -137,7 +141,7 @@ const Register = () => {
                 <span className=" h-10 w-10 rounded">
                   {avatar ? (
                     <img
-                      src={URL.createObjectURL(avatar)}
+                      src={avatar}
                       alt="avatar"
                       className="h-full w-full rounded"
                     />
@@ -155,7 +159,7 @@ const Register = () => {
                     name="avatar"
                     id="file-input"
                     accept=".jpg,.jpeg,.png"
-                    onChange={handleFileInPutChange}
+                    onChange={handleFileInputChange}
                     className="sr-only"
                   />
                 </label>

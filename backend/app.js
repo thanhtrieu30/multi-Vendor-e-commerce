@@ -7,7 +7,7 @@ const cors = require("cors");
 
 app.use(cors()); // cho phep truy cap api
 app.use("/", express.static("./uploads")); // file tinh~
-app.use(express.json());
+app.use(express.json({ limit: "50mb" })); //  đọc được dữ liệu json từ request
 app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: true, limit: "50mb" }));
 

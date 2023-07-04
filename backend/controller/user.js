@@ -1,46 +1,68 @@
 const router = require("express").Router();
-const path = require("path");
 const User = require("../model/user");
-const { upload } = require("../multer");
+const cloudinary = require("cloudinary");
+const jwt = require("jsonwebtoken");
 const ErrorHandler = require("../utils/ErrorHandler");
-const fs = require("fs");
+const sendMail = require("../utils/sendMail");
 
-router.post("/register-user", upload.single("file"), async (req, res, next) => {
-  const { name, email, password } = req.body;
-  /// neu da co email dang ky roi
-  const userEmail = await User.findOne({ email });
-  if (userEmail) {
-    /// nếu có email --> ko upload avatar
-    const fileName = req.file.filename;
-    const filePath = `uploads/${fileName}`;
-    ///  --> xóa avatar , module fs.unlink()
-    fs.unlink(filePath, (err) => {
-      if (err) {
-        console.log(err);
-        res.status(500).json({ message: "Lỗi xóa avatar" });
-      } else {
-        res.json({ message: "Avatar đã xóa" });
-      }
+/// dang ky user
+router.post("/register-user", async (req, res, next) => {
+  try {
+    const { name, email, password, avatar } = req.body;
+    /// neu da co email dang ky roi
+    const userEmail = await User.findOne({ email });
+    if (userEmail) {
+      /// nếu có email --> ko upload avatar
+      ///
+      return next(new ErrorHandler("Email đã tồn tại", 400));
+    }
+    const myCloud = await cloudinary.v2.uploader.upload(avatar, {
+      folder: "avatars",
     });
     ///
-    return next(new ErrorHandler("Email đã tồn tại", 400));
+
+    ///
+
+    const user = {
+      name: name,
+      password: password,
+      email: email,
+      avatar: {
+        public_id: myCloud.public_id,
+        url: myCloud.secure_url,
+      },
+    };
+
+    // tạo user database
+    // const newUser = await User.create(user);
+    // console.log(newUser);
+
+    const activationToken = createActivationToken(user);
+    const activaionUrl = `http://localhost:3000/activation/${activationToken}`;
+
+    try {
+      await sendMail({
+        email: user.email,
+        subject: "Kích hoạt email khách hàng",
+        message: `Xin chào ${user.name}, hãy xác nhận email bằng cách bấm vào link : ${activaionUrl}`,
+      });
+      res.status(201).json({
+        success: true,
+        message: `Hãy kiểm tra email của bạn : ${user.email}`,
+      });
+    } catch (error) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  } catch (err) {
+    return next(new ErrorHandler(err.message, 400));
   }
-  ///
-
-  ///lay du lieu file
-  const fileName = req.file.filename;
-  const fileUrl = path.join(fileName);
-
-  const user = {
-    name: name,
-    password: password,
-    email: email,
-    avatar: fileUrl,
-  };
-
-  // tạo user database
-  const newUser = await User.create(user);
-  console.log(newUser);
 });
+
+/// tạo token user
+const createActivationToken = (user) => {
+  return jwt.sign(user, process.env.ACTIVATION_SECRET_KEY, {
+    expiresIn: "1m",
+  });
+};
 
 module.exports = router;

@@ -15,11 +15,21 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, "Hãy nhập Password của bạn !"],
     minLength: [4, "nhập Password lớn hơn 4 ký tự"],
-    select: false,
+    select: false, // ghi đè
   },
   avatar: {
+    public_id: {
+      type: String,
+      required: true,
+    },
+    url: {
+      type: String,
+      required: true,
+    },
+  },
+  role: {
     type: String,
-    required: true,
+    default: "user",
   },
   //   phoneNumber:{
   //     type: Number,
@@ -46,17 +56,13 @@ const userSchema = new mongoose.Schema({
   //       },
   //     }
   //   ],
-  role: {
-    type: String,
-    default: "user",
-  },
 
   //  createdAt:{
   //   type: Date,
   //   default: Date.now(),
   //  },
-  resetPasswordToken: String, // để lưu trữ mã thông báo (token) để đặt lại mật khẩu người dùng
-  resetPasswordTime: Date, // dùng để lưu thời điểm yêu cầu đặt lại mật khẩu được tạo ra
+  //resetPasswordToken: String, // để lưu trữ mã thông báo (token) để đặt lại mật khẩu người dùng
+  // resetPasswordTime: Date, // dùng để lưu thời điểm yêu cầu đặt lại mật khẩu được tạo ra
 });
 
 //  Hash password
